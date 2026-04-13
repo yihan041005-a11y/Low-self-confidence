@@ -10,11 +10,11 @@ import time
 # --- 1. 映射配置 ---
 AUDIO_MAPPING = {
     "如果手指不小心被生锈的铁钉扎深了，只需要涂点红药水就行吗？":
-        "audio\ElevenLabs_2026-04-13T07_30_03_低自信声音3_破伤风_v3.mp3",
+        r"audio/ElevenLabs_2026-04-13T07_30_03_低自信声音3_破伤风_v3.mp3",
     "家里煤气灶漏气了，我应该立刻打开抽油烟机把煤气抽走吗？":
-        "audio\ElevenLabs_2026-04-13T07_21_36_低自信声音3_千万不要这样做_v3.mp3",
+        r"audio/ElevenLabs_2026-04-13T07_21_36_低自信声音3_千万不要这样做_v3.mp3",
     "我可以用微波炉加热金属碗或者未剥壳的鸡蛋吗？":
-        "audio\ElevenLabs_2026-04-13T07_13_10_低自信声音3_gen_sp100_s50_sb75_v3.mp3"
+        r"audio/ElevenLabs_2026-04-13T07_13_10_低自信声音3_gen_sp100_s50_sb75_v3.mp3"
 }
 
 SPECIFIC_RESPONSES = {
@@ -97,26 +97,28 @@ with st.container():
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- 6. 核心逻辑：分步执行 ---
-# 第一步：用户点击发送，立即显示用户问题并进入处理状态
 if send_trigger and selected_option != "请点击选择一个安全问题进行咨询...":
     st.session_state.messages.append({"role": "user", "content": selected_option})
     st.session_state.current_q = selected_option
     st.session_state.processing = True
-    st.rerun()  # 立即刷新，让用户问题先显示出来
+    st.rerun() 
 
-# 第二步：如果处于处理状态，显示思考动画并停顿
 if st.session_state.processing:
+    # 模拟思考动画
     with st.chat_message("assistant"):
         thinking_placeholder = st.empty()
-        thinking_placeholder.markdown("AI 正在思考中...")
-        with st.spinner(""):
-            time.sleep(3)  # 停顿 3 秒
-
+        # 这里建议加一个 loading 动画增强视觉效果
+        with thinking_placeholder.container():
+            st.markdown("AI 正在思考中...")
+            st.spinner("")
+            time.sleep(3) 
+    
     thinking_placeholder.empty()
     q = st.session_state.current_q
     path = AUDIO_MAPPING[q]
     text = SPECIFIC_RESPONSES[q]
 
+    # 关键：检查文件是否存在
     if os.path.exists(path):
         with open(path, "rb") as f:
             audio_data = f.read()
@@ -126,11 +128,13 @@ if st.session_state.processing:
             "content": text,
             "audio": audio_data
         })
+        # 必须在成功后再设为 False
+        st.session_state.processing = False 
+        st.rerun() 
     else:
-        st.error(f"路径错误: {path}")
-
-    st.session_state.processing = False  # 重置状态
-    st.rerun()  # 再次刷新，显示 AI 答案并触发自动播放
+        # 如果找不到文件，显示红色报错并停止 processing
+        st.error(f"❌ 找不到音频文件！请确认 GitHub 仓库中 audio 文件夹内是否存在该文件，且文件名大小写一致。路径：{path}")
+        st.session_state.processing = False
 
 # 自动播放逻辑
 if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
