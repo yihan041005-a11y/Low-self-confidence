@@ -10,11 +10,11 @@ import time
 # --- 1. 映射配置 ---
 AUDIO_MAPPING = {
     "如果手指不小心被生锈的铁钉扎深了，只需要涂点红药水就行吗？":
-        audio\"D:\360MoveData\Users\Lenovo\Desktop\音频\ElevenLabs_2026-04-13T07_30_03_低自信声音3_破伤风_v3.mp3",
+        "audio\ElevenLabs_2026-04-13T07_30_03_低自信声音3_破伤风_v3.mp3",
     "家里煤气灶漏气了，我应该立刻打开抽油烟机把煤气抽走吗？":
-        audio\"D:\360MoveData\Users\Lenovo\Desktop\音频\ElevenLabs_2026-04-13T07_21_36_低自信声音3_千万不要这样做_v3.mp3",
+        "audio\ElevenLabs_2026-04-13T07_21_36_低自信声音3_千万不要这样做_v3.mp3",
     "我可以用微波炉加热金属碗或者未剥壳的鸡蛋吗？":
-        audio\"D:\360MoveData\Users\Lenovo\Desktop\音频\ElevenLabs_2026-04-13T07_13_10_低自信声音3_gen_sp100_s50_sb75_v3.mp3"
+        "audio\ElevenLabs_2026-04-13T07_13_10_低自信声音3_gen_sp100_s50_sb75_v3.mp3"
 }
 
 SPECIFIC_RESPONSES = {
