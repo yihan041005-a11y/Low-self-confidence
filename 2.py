@@ -10,11 +10,11 @@ import time
 # --- 1. 映射配置 ---
 AUDIO_MAPPING = {
     "如果手指不小心被生锈的铁钉扎深了，只需要涂点红药水就行吗？":
-        r"audio/ElevenLabs_2026-04-13T07_30_03_低自信声音3_破伤风_v3.mp3",
+        r"audio/ElevenLabs_2026-04-13T07_30_03_低自信声音3_破伤风_v3 (mp3cut.net).mp3",
     "家里煤气灶漏气了，我应该立刻打开抽油烟机把煤气抽走吗？":
-        r"audio/ElevenLabs_2026-04-13T07_21_36_低自信声音3_千万不要这样做_v3.mp3",
+        r"audio/ElevenLabs_2026-04-13T07_21_36_低自信声音3_千万不要这样做_v3 (mp3cut.net).mp3",
     "我可以用微波炉加热金属碗或者未剥壳的鸡蛋吗？":
-        r"audio/ElevenLabs_2026-04-13T07_13_10_低自信声音3_gen_sp100_s50_sb75_v3.mp3"
+        r"audio/ElevenLabs_2026-04-13T07_13_10_低自信声音3_gen_sp100_s50_sb75_v3 (mp3cut.net).mp3"
 }
 
 SPECIFIC_RESPONSES = {
@@ -40,16 +40,18 @@ if "page" not in st.session_state:
     st.session_state.page = 1
 if "messages" not in st.session_state:
     st.session_state.messages = []
+# 新增：用于记录等待加载状态的提问
+if "pending_question" not in st.session_state:
+    st.session_state.pending_question = None
 
-
-# ── 读取 Banner 图片 ──────────────────────────────────────
+# ── 读取 Banner 图片 (核心优化 1：使用 st.cache_data 极速读取内存) ──
+@st.cache_data
 def get_img_base64(path: str) -> str:
     try:
         with open(path, "rb") as f:
             return base64.b64encode(f.read()).decode()
     except:
         return ""
-
 
 BANNER_B64 = get_img_base64("banner.png")
 BANNER_SRC = f"data:image/png;base64,{BANNER_B64}" if BANNER_B64 else ""
@@ -127,7 +129,6 @@ button[kind="primary"] {{
 
 /* ======================================================== */
 /* 暴击修复 1：兼容所有手机的返回键（左上角）方案           */
-/* 原理：将所有普通按钮飞到左上角，再把底部栏里的按钮盖回来 */
 /* ======================================================== */
 button[kind="secondary"] {{
     position: fixed !important;
@@ -144,7 +145,6 @@ button[kind="secondary"] {{
     color: #ffffff !important;
     font-weight: 500 !important;
 }}
-/* 把被误伤的底部栏“发送/下一页”按钮恢复原样 */
 div[data-testid="stHorizontalBlock"] button[kind="secondary"] {{
     position: relative !important;
     top: auto !important; left: auto !important;
@@ -158,7 +158,6 @@ div[data-testid="stHorizontalBlock"] button[kind="secondary"] {{
 
 /* ======================================================== */
 /* 暴击修复 2：彻底解决下拉框选项重叠（乱码）问题           */
-/* 原理：强行干掉 React-Window 的绝对定位，改为普通列表堆叠 */
 /* ======================================================== */
 div[data-baseweb="popover"] {{
     z-index: 99999 !important;
@@ -186,7 +185,7 @@ ul[data-baseweb="menu"] li {{
 
 # ── 顶栏 & Banner 渲染 ────────────────────────────────────
 banner_img = f'<img src="{BANNER_SRC}"/>' if BANNER_SRC else ''
-header_shift = "80px" if st.session_state.page == 2 else "0px"  # 给返回按钮留出位置
+header_shift = "80px" if st.session_state.page == 2 else "0px"
 
 st.markdown(f"""
 <div class="fixed-header">
@@ -225,7 +224,7 @@ if st.session_state.page == 1:
 · <b>耐心等待：</b> 语音为大模型实时生成，加载需几秒钟时间，请稍作等待。</p>
 
 <p style="margin-top: 20px;"><b style="color: #ffffff;">📝 第三步：完成问卷</b><br>
-在完成<b style="color: #3b82f6;">至少三轮</b>问题的交互后，请跟随您的<b>第一直觉</b>，点击页面右上角的“完成”按钮，跳转至问卷页面进行最终评分。</p>
+请完成<b style="color: #3b82f6;">全部三个问题的交互后</b>，请跟随您的<b>第一直觉</b>，点击页面右上角的“进入问答环节”按钮，跳转至问卷页面进行最终评分。</p>
 
 <p style="margin-top: 28px; color: #4dabff; text-align: center;">
 <b>感谢您的配合！您的认真反馈对本研究结论至关重要。</b>
@@ -243,37 +242,60 @@ if st.session_state.page == 1:
 # --- 第二页：实验交互 ---
 elif st.session_state.page == 2:
 
-    # ========================================================
-    # 左上角返回按钮（直接调用，CSS 会自动把它拉到左上角）
-    # ========================================================
     if st.button("⬅ 返回", key="back_btn"):
         st.session_state.page = 1
         st.rerun()
 
-    # 右上角完成按钮
-    if st.button("完成", type="primary", key="finish_btn"):
+    if st.button("进入问答环节", type="primary", key="finish_btn"):
         st.session_state.page = 3
         st.rerun()
 
+    # ========================================================
     # 聊天内容渲染（滚动区）
+    # ========================================================
     chat_html = '<div class="scroll-wrap" id="chatWrap">'
-    if not st.session_state.messages:
+    
+    if not st.session_state.messages and not st.session_state.pending_question:
         chat_html += '<div style="display:flex;align-items:center;justify-content:center;height:100%;opacity:0.4;font-size:13px;color:#c0d8ff;">请在底部选择问题发送</div>'
     else:
+        # 1. 渲染已完成的历史记录
         for msg in st.session_state.messages:
             if msg["role"] == "user":
                 chat_html += f'<div class="bubble-user-wrap"><div class="bubble-user">{msg["content"]}</div></div>'
             else:
-                audio_b64 = base64.b64encode(msg["audio"]).decode()
+                audio_b64 = msg.get("audio_b64", "")
+                audio_html = f'<audio controls src="data:audio/mp3;base64,{audio_b64}"></audio>' if audio_b64 else '<div style="color:#ff6b6b; font-size:12px; margin-top:8px;">⚠️ 无法加载音频，请检查文件路径是否正确。</div>'
                 chat_html += f'''
                 <div class="bubble-ai-wrap">
                     <div class="ai-dot">🎙️</div>
                     <div style="flex:1;">
                         <div class="bubble-ai">{msg["content"]}</div>
-                        <audio controls src="data:audio/mp3;base64,{audio_b64}"></audio>
+                        {audio_html}
                     </div>
                 </div>'''
+
+        # 2. 如果存在 pending_question，说明用户刚发了问题，立刻渲染“正在加载中”气泡
+        if st.session_state.pending_question:
+            chat_html += '''
+            <div class="bubble-ai-wrap">
+                <div class="ai-dot">🎙️</div>
+                <div style="flex:1;">
+                    <div class="bubble-ai" style="color: #4dabff; font-weight: bold; font-style: italic;">正在加载中.....</div>
+                </div>
+            </div>'''
+            
     chat_html += '</div>'
+    
+    # 1.2倍速脚本注入
+    chat_html += """
+    <script>
+        var audios = window.parent.document.getElementsByTagName('audio');
+        for (var i = 0; i < audios.length; i++) {
+            audios[i].playbackRate = 1.2;
+        }
+    </script>
+    """
+    
     st.markdown(chat_html, unsafe_allow_html=True)
 
     # 底部对话控制器
@@ -285,25 +307,44 @@ elif st.session_state.page == 2:
     with col_btn:
         send_trigger = st.button("发送", use_container_width=True)
 
+    # ========================================================
+    # 步骤一：触发发送，保存提问，并标记为 pending 状态，立即刷新页面
+    # ========================================================
     if send_trigger and selected_short != "请点击选择一个问题进行咨询...":
         long_question = SHORT_TO_LONG[selected_short]
+        # 存入用户问题
         st.session_state.messages.append({"role": "user", "content": long_question})
+        # 标记当前正在等待生成
+        st.session_state.pending_question = long_question
+        # 立刻重载，让上方渲染出“正在加载中.....”
+        st.rerun()
 
+    # ========================================================
+    # 步骤二：页面重新载入后，展示了“正在加载中”，现在执行2秒等待并加载答案
+    # ========================================================
+    if st.session_state.pending_question:
+        long_question = st.session_state.pending_question
         answer = SPECIFIC_RESPONSES[long_question]
         audio_path = AUDIO_MAPPING[long_question]
+        
+        # 让页面在前端显示“正在加载中.....”保持 2 秒钟
+        time.sleep(2)
 
-        try:
-            with st.spinner("读取语音中..."):
-                time.sleep(1)  # 添加稍微的停顿，保持原有的交互节奏
-                with open(audio_path, "rb") as f:
-                    audio_bytes = f.read()
+        audio_b64 = ""
+        if os.path.exists(audio_path):
+            with open(audio_path, "rb") as f:
+                audio_b64 = base64.b64encode(f.read()).decode()
+        
+        # 移除 pending 状态，追加正式回答
+        st.session_state.pending_question = None
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": answer, 
+            "audio_b64": audio_b64
+        })
+        # 再次重载，用真实的文字和语音替换掉“正在加载中.....”
+        st.rerun()
 
-                st.session_state.messages.append({
-                    "role": "assistant", "content": answer, "audio": audio_bytes
-                })
-                st.rerun()
-        except Exception as e:
-            st.error(f"无法读取音频文件，请检查文件路径是否正确。错误信息: {e}")
 
 # --- 第三页：问卷跳转 ---
 elif st.session_state.page == 3:
