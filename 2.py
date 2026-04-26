@@ -353,7 +353,7 @@ elif st.session_state.page == 3:
         <div style="text-align:center; padding-top:40px;">
             <p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
             <p style="margin:20px 0; color:#c0d8ff;">请点击下方链接进入问卷调查平台：</p>
-            <a href="https://v.wjx.cn/vm/t3s55FM.aspx# " target="_blank" 
+            <a href="https://v.wjx.cn/vm/t3s55FM.aspx" target="_top" 
                style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
                       text-decoration:none; border-radius:8px; font-weight:bold;">
                进入问卷星填写评分
