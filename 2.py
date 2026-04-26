@@ -348,22 +348,21 @@ elif st.session_state.page == 2:
 
 # --- 第三页：问卷跳转 ---
 elif st.session_state.page == 3:
-    st.markdown(f"""
-    <div class="scroll-wrap">
-        <div style="text-align:center; padding-top:40px;">
-            <p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
-            <p style="margin:20px 0; color:#c0d8ff;">请点击下方链接进入问卷调查平台：</p>
-            <a href="https://v.wjx.cn/vm/t3s55FM.aspx" target="_top" 
-               style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
-                      text-decoration:none; border-radius:8px; font-weight:bold;">
-               进入问卷星填写评分
-            </a>
-            <p style="font-size:12px; color:rgba(180,210,255,0.4); margin-top:40px;">
-                * 提交问卷后即可关闭页面，感谢您的支持！
-            </p>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("""
+<div class="scroll-wrap">
+<div style="text-align:center; padding-top:40px;">
+<p style="font-size:18px; color:white; font-weight:bold;">实验交互已完成</p>
+<p style="margin:20px 0; color:#c0d8ff;">请点击下方按钮进入问卷调查平台：</p>
+
+<a href="https://v.wjx.cn/vm/t3s55FM.aspx" target="_self" rel="noopener noreferrer"
+style="display:inline-block; background:#1941c8; color:white; padding:12px 30px; 
+text-decoration:none; border-radius:8px; font-weight:bold; cursor:pointer;">
+进入问卷星填写评分
+</a>
+
+</div>
+</div>
+""", unsafe_allow_html=True)
 
     _, col_back, _ = st.columns([0.2, 0.6, 0.2])
     with col_back:
